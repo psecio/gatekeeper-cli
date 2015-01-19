@@ -1,0 +1,30 @@
+{
+	"name":"psecio/gatekeeper-cli",
+    "type":"library",
+    "description":"A command line too for use with the Gatekeeper auth framework",
+    "keywords":["gatekeeper","commandline","cli","tool"],
+    "homepage":"https://github.com/psecio/gatekeeper-cli.git",
+    "license":"MIT",
+    "authors":[
+        {
+            "name":"Chris Cornutt",
+            "email":"ccornutt@phpdeveloper.org",
+            "homepage":"http://www.phpdeveloper.org/"
+        }
+    ],
+    "require": {
+        "symfony/console": "2.6.3",
+        "psecio/gatekeeper": "1.*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Psecio\\GatekeeperCli\\": "src/"
+        }
+    },
+    "config": {
+    	"bin-dir": "bin"
+    },
+    "bin": [
+    	"bin/gatekeeper"
+    ]
+}
