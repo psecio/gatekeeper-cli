@@ -3,9 +3,10 @@
 namespace Psecio\GatekeeperCli\Command;
 
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Console\Input\InputOption;
 
 use Psecio\Gatekeeper\Gatekeeper;
 
@@ -16,12 +17,18 @@ class ShowCommand extends Command
 		$this->setName('show')
 			->setDescription('Show data based on the given type')
 			->addArgument('type', null, InputArgument::REQUIRED, 'Type to show', [])
+			->addOption('permissions', null, InputOption::VALUE_NONE, 'Show permissions results')
+			->addOption('id', null, InputOption::VALUE_OPTIONAL, 'ID to search for')
 			->setHelp('Used to show information based on the given type');
 	}
 
 	public function execute(InputInterface $input, OutputInterface $output)
 	{
 		$params = array();
+		$options = array(
+			'permissions' => $input->getOption('permissions'),
+			'id' => $input->getOption('id')
+		);
 		$type = $input->getArgument('type');
 
 		$method = 'show'.$type;
@@ -29,7 +36,7 @@ class ShowCommand extends Command
 			throw new \InvalidArgumentException('Invalid show type: '.$type);
 		}
 
-		$this->$method($params, $output);
+		$this->$method($options, $output);
 	}
 
 	private function buildTable(array $columns, array $data, $output)
@@ -53,11 +60,26 @@ class ShowCommand extends Command
 	/**
 	 * Show the listing of users
 	 *
-	 * @param array  $params [description]
+	 * @param array $options Command line options
 	 * @param OutputInterface $output Output interface object
 	 */
-	public function showUsers(array $params = array(), $output)
+	public function showUsers(array $options = array(), $output)
 	{
+		if (!empty($options['permissions'])) {
+			$this->showUserPermissions($options, $output);
+		} else {
+			$this->showUserGeneral($options, $output);
+		}
+	}
+
+
+	public function showUserGeneral(array $options = array(), $output)
+	{
+		$params = array();
+		if (!empty($options['id'])) {
+			$params['id'] = $options['id'];
+		}
+
 		$columns = array(
 			'username' => 'Username',
 			'password' => 'Password',
@@ -75,13 +97,50 @@ class ShowCommand extends Command
 	}
 
 	/**
-	 * Show the listing of groups
+	 * Show the permissions for a user
 	 *
-	 * @param array  $params [description]
+	 * @param array $options Command line options
 	 * @param OutputInterface $output Output interface object
 	 */
-	public function showGroups(array $params = array(), $output)
+	public function showUserPermissions(array $options = array(), $output)
 	{
+		if (empty($options['id'])) {
+			throw new \InvalidArgumentException('You must specify a user ID!');
+		}
+
+		$params = array('userId' => $options['id']);
+		$columns = array(
+			'name' => 'Name',
+			'description' => 'Description',
+			'created' => 'Date Created',
+			'updated' => 'Date Updated',
+			'id' => 'ID'
+		);
+		$data = array();
+		$ds = Gatekeeper::getDatasource();
+
+		$permissions = Gatekeeper::findUserPermissions($params);
+		foreach ($permissions->toArray(true) as $permission) {
+			$perm = new \Psecio\Gatekeeper\PermissionModel($ds);
+			$perm = $ds->find($perm, array('id' => $permission['permissionId']));
+			$data[] = $perm->toArray();
+		}
+		$this->buildTable($columns, $data, $output);
+	}
+
+	/**
+	 * Show the listing of groups
+	 *
+	 * @param array $options Command line options
+	 * @param OutputInterface $output Output interface object
+	 */
+	public function showGroups(array $options = array(), $output)
+	{
+		$params = array();
+		if (!empty($options['id'])) {
+			$params['id'] = $options['id'];
+		}
+
 		$columns = array(
 			'name' => 'Name',
 			'description' => 'Description',
@@ -90,6 +149,30 @@ class ShowCommand extends Command
 			'id' => 'ID');
 
 		$groups = Gatekeeper::findGroups($params);
+		$this->buildTable($columns, $groups->toArray(true), $output);
+	}
+
+	/**
+	 * Show the listing of permission
+	 *
+	 * @param array $options Command line options
+	 * @param OutputInterface $output Output interface object
+	 */
+	public function showPermissions(array $options = array(), $output)
+	{
+		$params = array();
+		if (!empty($options['id'])) {
+			$params['id'] = $options['id'];
+		}
+
+		$columns = array(
+			'name' => 'Name',
+			'description' => 'Description',
+			'created' => 'Date Created',
+			'updated' => 'Date Updated',
+			'id' => 'ID');
+
+		$groups = Gatekeeper::findPermissions($params);
 		$this->buildTable($columns, $groups->toArray(true), $output);
 	}
 }
