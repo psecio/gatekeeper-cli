@@ -8,10 +8,12 @@ set_time_limit(0);
 use Symfony\Component\Console\Application;
 use Psecio\GatekeeperCli\Command\ShowCommand;
 use Psecio\GatekeeperCli\Command\CheckCommand;
+use Psecio\GatekeeperCli\Command\AddCommand;
 
 \Psecio\Gatekeeper\Gatekeeper::init();
 
 $app = new Application('Gatekeeper', 'dev');
 $app->add(new ShowCommand);
 $app->add(new CheckCommand);
+$app->add(new AddCommand);
 $app->run();
